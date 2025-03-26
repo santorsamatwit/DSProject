@@ -1,6 +1,11 @@
 import pandas as pd
 import numpy as np
 import matplotlib as mpl
+import matplotlib.pyplot as plt
+
+def arr_averager(a):
+    for i in range(0,len(a)):
+        a[i] = a[i].mean()
 
 # dataset importing
 CJFM_2020 = pd.read_csv('../datasets/MTA_B2020_CJFM.csv')
@@ -25,10 +30,17 @@ current_interlined = CJFM_2025[~CJFM_2025['line'].isin(['1', '6', '7', 'G', 'L',
 otpm = OTPM_2020[OTPM_2020['line'].isin(['1', '6', '7', 'G', 'L', 'S 42nd', 'S Fkln', 'S Rock'])]
 current_otpm = OTPM_2020[OTPM_2020['line'].isin(['1', '6', '7', 'G', 'L', 'S 42nd', 'S Fkln','S Rock'])]
 
+# creates an array out of the numerical values from the data, ignoring line letterings and numbers
+
+deinterlined_arr = np.array([deinterlined['additional platform time'], deinterlined['additional train time'], deinterlined['total_apt'], deinterlined['total_att'], deinterlined['over_five_mins'], deinterlined['over_five_mins_perc']])
+
+interlined_arr = np.array([interlined['additional platform time'], interlined['additional train time'], interlined['total_apt'], interlined['total_att'], interlined['over_five_mins'], interlined['over_five_mins_perc']])
+
 # creates an array out of deinterlined and interlined of the averages of every numerical value, rounded to 3 places.
-avg_deinterlined_arr = np.round(np.array([deinterlined['additional platform time'].mean(), deinterlined['additional train time'].mean(), deinterlined['total_apt'].mean(), deinterlined['total_att'].mean(), deinterlined['over_five_mins'].mean(), deinterlined['over_five_mins_perc'].mean()]),3)
-avg_interlined_arr = np.round(np.array([interlined['additional platform time'].mean(), interlined['additional train time'].mean(), interlined['total_apt'].mean(), interlined['total_att'].mean(), interlined['over_five_mins'].mean(), interlined['over_five_mins_perc'].mean()]),3)
+
+avg_deinterlined_arr = np.round(np.mean(deinterlined_arr),3)
+avg_interlined_arr = np.round(np.mean(interlined_arr),3)
+
+averaged_sample_size = int((len(deinterlined_arr[0]) + len(interlined_arr[0])) / 2)
 
 
-
-print(avg_deinterlined_arr)
