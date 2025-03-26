@@ -16,8 +16,10 @@ OTPM_2025 = OTPM_2025.drop('division', axis=1)
 # data sorting
 deinterlined = CJFM_2020[CJFM_2020['line'].isin(['1', '6', '7', 'G', 'L', 'S 42nd', 'S Fkln', 'S Rock'])]
 interlined = CJFM_2020[~CJFM_2020['line'].isin(['1', '6', '7', 'G', 'L', 'S 42nd', 'S Fkln','S Rock'])]
+
 current_deinterlined = CJFM_2025[CJFM_2025['line'].isin(['1', '6', '7', 'G', 'L', 'S 42nd', 'S Fkln', 'S Rock'])]
 current_interlined = CJFM_2025[~CJFM_2025['line'].isin(['1', '6', '7', 'G', 'L', 'S 42nd', 'S Fkln', 'S Rock'])]
+
 otpm = OTPM_2020[OTPM_2020['line'].isin(['1', '6', '7', 'G', 'L', 'S 42nd', 'S Fkln', 'S Rock'])]
 current_otpm = OTPM_2020[OTPM_2020['line'].isin(['1', '6', '7', 'G', 'L', 'S 42nd', 'S Fkln','S Rock'])]
 
