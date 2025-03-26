@@ -42,5 +42,3 @@ avg_deinterlined_arr = np.round(np.mean(deinterlined_arr),3)
 avg_interlined_arr = np.round(np.mean(interlined_arr),3)
 
 averaged_sample_size = int((len(deinterlined_arr[0]) + len(interlined_arr[0])) / 2)
-
-
