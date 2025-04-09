@@ -8,15 +8,36 @@ def arr_averager(a):
     for i in range(0,len(a)):
         a[i] = a[i].mean()
 
+def find_fastest_line(line_dfs):
+    fastest_line = None
+    fastest_avg_runtime = float('inf')
+
+    for line, df in line_dfs.items():
+        if not df.empty and 'Average Actual Runtime' in df.columns:
+            avg_runtime = df['Average Actual Runtime'].mean()
+            if avg_runtime < fastest_avg_runtime:
+                fastest_avg_runtime = avg_runtime
+                fastest_line = line
+        elif df.empty:
+            print(f"Warning: No data available for line {line} to calculate average runtime.")
+        else:
+            print(f"Warning: 'Average Actual Runtime' column not found for line {line}.")
+
+    if fastest_line:
+        print(f"The fastest line on average is line {fastest_line} with an average actual runtime of {fastest_avg_runtime:.2f} in minutes.")
+    else:
+        print("No line data available with 'Average Actual Runtime' to determine the fastest line.")
+    return fastest_line, fastest_avg_runtime
+
+
 DEINTERLINED_TERMINI = {
-    '1': ['242ND ST-BWAY', 'SOUTH FERRY TERMINAL'], #
+    '1': ['242ND STREET-BWAY', 'SOUTH FERRY TERMINAL'], #
     '6': ['PELHAM BAY PARK', 'BROOKLYN BRIDGE'], # 6 exp and 6 loc have the same termini, just fewer stops on exp
-    '7': ['34TH ST-HUDSON YARDS', 'FLUSHING-MAIN ST'], # 7 exp and 7 loc have the same termini, just fewer stops on exp
+    '7': ['34TH STREET-HUDSON YARDS', 'FLUSHING-MAIN STREET'], # 7 exp and 7 loc have the same termini, just fewer stops on exp
     'G': ['COURT SQUARE', 'CHURCH AVENUE'], #
-    'L': ['14 ST', '8 AV'], # missing from dataset?
-    'S42': ['TIMES SQUARE-SHUTTLE', 'GRAND CENTRAL-SHUTTLE'], # may exclude as its a major outlier
-    'SF': ['FRANKLIN AVENUE', 'PROSPECT PARK'], #
-    'H': ['BROAD CHANNEL', 'ROCKAWAY PARK-BEACH 116 ST', 'ROCKAWAY BLVD', 'MOTT AVENUE-FAR ROCKAWAY'] # still known as the H in the database
+    'GS': ['TIMES SQUARE-SHUTTLE', 'GRAND CENTRAL-SHUTTLE'], # may exclude as its a major outlier
+    'FS': ['FRANKLIN AVENUE', 'PROSPECT PARK'], #
+    'H': ['BROAD CHANNEL', 'BEACH 116TH STREET-ROCKAWAY PARK', 'ROCKAWAY BOULEVARD', 'MOTT AVENUE-FAR ROCKAWAY'] # still known as the H in the database
 }
 INTERLINED_TERMINI = {
     '2': ['EAST 241ST STREET', 'FLATBUSH AVENUE'], #
@@ -27,7 +48,7 @@ INTERLINED_TERMINI = {
     'C': ['168TH STREET-8AV', 'EUCLID AVENUE'], #
     'E': ['PARSONS/ARCHER-JAMAICA CENTER', 'WORLD TRADE CENTER'], #
     'B': ['BEDFORD PARK BLVD', 'BRIGHTON BEACH'], #
-    'D': ['205 ST-NORWOOD', 'STILLWELL AVENUE-CONEY ISLAND'], #
+    'D': ['205TH STREET-NORWOOD', 'STILLWELL AVENUE-CONEY ISLAND'], #
     'F': ['179TH STREET-JAMAICA', 'STILLWELL AVENUE-CONEY ISLAND'], #
     'M': ['71ST/CONTINENTAL AVENUE-FOREST HILLS', 'METROPOLITAN AVENUE-MIDDLE VILLAGE'],
     'N': ['STILLWELL AVENUE-CONEY ISLAND', 'DITMARS BOULEVARD-ASTORIA', 'WHITEHALL STREET-SOUTH FERRY'], # W is an N short turn in the database
@@ -91,9 +112,24 @@ for line, termini in INTERLINED_TERMINI.items():
         print(f"Warning: No valid termini pairs found for interlined line {line}")
 
 
+
 for line, df in deinterlined_dataframes.items():
     df.drop(['Origin Station Name', 'Destination Station Name'], axis=1, inplace=True)
 
 for line, df in interlined_dataframes.items():
     df.drop(['Origin Station Name', 'Destination Station Name'], axis=1, inplace=True)
 
+deinterlined_ns_dataframes = deinterlined_dataframes.copy()
+deinterlined_ns_dataframes.pop('GS')
+deinterlined_ns_dataframes.pop('FS')
+    
+# Find the fastest deinterlined line
+print("\n--- Fastest Deinterlined Line ---")
+fastest_deinterlined_line, fastest_deinterlined_runtime = find_fastest_line(deinterlined_dataframes)
+
+print("\n--- Fastest Deinterlined Line (no shuttles) ---")
+fastest_deinterlined_ns_line, fastest_deinterlined_ns_runtime = find_fastest_line(deinterlined_ns_dataframes)
+
+# Find the fastest interlined line
+print("\n--- Fastest Interlined Line ---")
+fastest_interlined_line, fastest_interlined_runtime = find_fastest_line(interlined_dataframes)
