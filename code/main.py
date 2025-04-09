@@ -2,6 +2,7 @@ import pandas as pd
 import numpy as np
 import matplotlib as mpl
 import matplotlib.pyplot as plt
+from sklearn.linear_model import LinearRegression
 pd.options.mode.chained_assignment = None
 
 def arr_averager(a):
@@ -29,6 +30,84 @@ def find_fastest_line(line_dfs):
         print("No line data available with 'Average Actual Runtime' to determine the fastest line.")
     return fastest_line, fastest_avg_runtime
 
+def analyze_speed_trend(line_dfs, category_name):
+    fastest_line = None
+    fastest_avg_runtime = float('inf')
+    trends = {}
+
+    for line, df in line_dfs.items():
+        if not df.empty and 'Average Actual Runtime' in df.columns and 'Month' in df.columns:
+            try:
+                # Ensure 'Month' is treated as a numerical category
+                df['Month_numeric'] = pd.to_datetime(df['Month'],format='%m/01/%Y', errors='coerce').dt.month
+                df_cleaned = df.dropna(subset=['Month_numeric', 'Average Actual Runtime'])
+
+                if not df_cleaned.empty:
+                    X = df_cleaned['Month_numeric'].values.reshape(-1, 1)
+                    y = df_cleaned['Average Actual Runtime'].values
+                    model = LinearRegression()
+                    model.fit(X, y)
+                    slope = model.coef_[0]
+                    intercept = model.intercept_
+
+                    # Get the last month and corresponding runtime
+                    last_month = df_cleaned['Month_numeric'].iloc[-1]
+                    last_avg_runtime = df_cleaned['Average Actual Runtime'].iloc[-1]
+
+                    trends[line] = {'slope': slope, 'intercept': intercept, 'last_month': last_month, 'last_avg_runtime': last_avg_runtime}
+
+                    current_avg_runtime = df_cleaned['Average Actual Runtime'].mean()
+                    if current_avg_runtime < fastest_avg_runtime:
+                        fastest_avg_runtime = current_avg_runtime
+                        fastest_line = line
+                else:
+                    print(f"Warning: Not enough valid data (Month and runtime) for linear regression on {category_name} line {line}.")
+
+            except Exception as e:
+                print(f"Error during linear regression for {category_name} line {line}: {e}")
+        elif df.empty:
+            print(f"Warning: No data available for {category_name} line {line}.")
+        else:
+            print(f"Warning: Missing required columns ('Average Actual Runtime' or 'Month') for {category_name} line {line}.")
+
+    print(f"\n--- Speed Trend Analysis (using 'Month' column) for {category_name} Lines ---")
+    fastest_line_future_prediction = None
+    fastest_future_runtime = float('inf')
+
+    if fastest_line and trends:
+        print(f"\nCurrent fastest {category_name} line (based on overall average): {fastest_line} (Average Actual Runtime: {fastest_avg_runtime:.2f})")
+
+        for line, trend in trends.items():
+            slope = trend['slope']
+            intercept = trend['intercept']
+            last_month = trend['last_month']
+            last_avg_runtime = trend['last_avg_runtime']
+            trend_desc = "slowing down" if slope > 0 else "speeding up" if slope < 0 else "staying relatively constant"
+            print(f"Line {line}: Trend (per month): {trend_desc} (Slope: {slope:.8e}, Last Avg Runtime: {last_avg_runtime:.2f})")
+
+            # Projecting to the next month (assuming monthly data)
+            future_month = last_month + 1
+            future_runtime = slope * future_month + intercept
+
+            if future_runtime < fastest_future_runtime:
+                fastest_future_runtime = future_runtime
+                fastest_line_future_prediction = line
+
+        if fastest_line_future_prediction:
+            print(f"\nBased on linear regression, the fastest {category_name} line in the next month (projected) might be: {fastest_line_future_prediction} (Projected Average Actual Runtime: {fastest_future_runtime:.2f})")
+            if fastest_line_future_prediction == fastest_line:
+                print(f"This suggests that the current fastest {category_name} line ({fastest_line}) is likely to remain the fastest.")
+            else:
+                print(f"This suggests a potential change in the fastest {category_name} line.")
+        else:
+            print(f"Could not predict the future fastest {category_name} line.")
+
+    else:
+        print(f"Could not determine the current fastest {category_name} line or analyze trends.")
+
+
+
+
 
 DEINTERLINED_TERMINI = {
     '1': ['242ND STREET-BWAY', 'SOUTH FERRY TERMINAL'], #
@@ -44,7 +123,7 @@ INTERLINED_TERMINI = {
     '3': ['148TH STREET-LENOX', 'NEW LOTS AVENUE'], #
     '4': ['WOODLAWN-JEROME AVENUE', 'UTICA AVENUE'], #
     '5': ['DYRE AVENUE', 'FLATBUSH AVENUE', 'EAST 238TH STREET'], #
-    'A': ['207 ST-8AV', 'LEFFERTS BOULEVARD-OZONE PARK', 'MOTT AVENUE-FAR ROCKAWAY', 'BEACH 116TH STREET-ROCKAWAY PARK'], #
+    'A': ['207TH STREET-8AV', 'LEFFERTS BOULEVARD-OZONE PARK', 'MOTT AVENUE-FAR ROCKAWAY', 'BEACH 116TH STREET-ROCKAWAY PARK'], #
     'C': ['168TH STREET-8AV', 'EUCLID AVENUE'], #
     'E': ['PARSONS/ARCHER-JAMAICA CENTER', 'WORLD TRADE CENTER'], #
     'B': ['BEDFORD PARK BLVD', 'BRIGHTON BEACH'], #
@@ -61,7 +140,7 @@ INTERLINED_TERMINI = {
 DATASET = pd.read_csv('../datasets/MTA_EtoE_Times.csv')
 
 # dataset cleaning
-DATASET = DATASET.drop(['Time Period','Schedule Day Type','Average Speed', 'Average Scheduled Runtime', 'Scheduled Trains', 'Actual Trains', 'Distance', 'Direction', 'Number of Stops', 'Stop Path ID', 'Origin Station ID', 'Destination Station ID',], axis=1)
+DATASET = DATASET.drop(['Time Period', 'Schedule Day Type','Average Speed', 'Average Scheduled Runtime', 'Scheduled Trains', 'Actual Trains', 'Distance', 'Direction', 'Number of Stops', 'Stop Path ID', 'Origin Station ID', 'Destination Station ID',], axis=1)
 
 
 deinterlined_dataframes = {}
@@ -122,6 +201,9 @@ for line, df in interlined_dataframes.items():
 deinterlined_ns_dataframes = deinterlined_dataframes.copy()
 deinterlined_ns_dataframes.pop('GS')
 deinterlined_ns_dataframes.pop('FS')
+deinterlined_ns_dataframes.pop('H')
+
+
     
 # Find the fastest deinterlined line
 print("\n--- Fastest Deinterlined Line ---")
@@ -133,3 +215,12 @@ fastest_deinterlined_ns_line, fastest_deinterlined_ns_runtime = find_fastest_lin
 # Find the fastest interlined line
 print("\n--- Fastest Interlined Line ---")
 fastest_interlined_line, fastest_interlined_runtime = find_fastest_line(interlined_dataframes)
+
+
+# Analyze deinterlined lines
+analyze_speed_trend(deinterlined_dataframes, "Deinterlined")
+
+analyze_speed_trend(deinterlined_ns_dataframes, "Deinterlined (No Shuttle)")
+
+# Analyze interlined lines
+analyze_speed_trend(interlined_dataframes, "Interlined")
