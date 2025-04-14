@@ -1,0 +1,1 @@
+An investigation into the interlined nature of the New York City subway, and how it affects daily commutes. Utilizing average line runtimes and linear regression, a conclusion was able to be reached as to whether interlining or deinterlining was faster.
